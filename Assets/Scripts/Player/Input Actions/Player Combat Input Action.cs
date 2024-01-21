@@ -30,9 +30,11 @@ public class PlayerCombatInputAction : MonoBehaviour {
     private void Update() {
         if (m1HA1Pressed) {
             playerAnimator.Play(m1HA1Name);
+            m1HA1Pressed = false;
         }
         if (m2HA4Pressed) {
             playerAnimator.Play(m2HA4Name);
+            m2HA4Pressed = false;
         }
     }
 

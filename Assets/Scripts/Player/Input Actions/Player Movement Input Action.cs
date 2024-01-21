@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class PlayerMovementInputAction : MonoBehaviour {
     public Animator playerAnimator;
+    public float rotationSpeed = 10;
 
     private int isWalkingHash;
     private int isRunningHash;
@@ -40,6 +41,7 @@ public class PlayerMovementInputAction : MonoBehaviour {
     private void HandleJump() {
         if (isJumpPressed) {
             playerAnimator.Play("Jumping");
+            isJumpPressed = false;
         }
     }
 
@@ -69,7 +71,14 @@ public class PlayerMovementInputAction : MonoBehaviour {
     private void HandleRotation() {
         if (!isMovementPressed) { return; }
 
-        Vector3 positionToLookAt = transform.position + new Vector3(movementInput.x, 0, movementInput.y);
-        transform.LookAt(positionToLookAt);
+        Vector3 positionToLookAt;
+        positionToLookAt = new Vector3(movementInput.x, 0, movementInput.y);
+
+        Quaternion currentRotation = transform.rotation;
+
+        Quaternion targetRotation = Quaternion.LookRotation(positionToLookAt);
+        transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, rotationSpeed * Time.deltaTime);
+
+        //transform.LookAt(transform.position + positionToLookAt);
     }
 }
