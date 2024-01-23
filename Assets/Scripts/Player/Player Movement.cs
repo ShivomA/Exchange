@@ -1,92 +1,147 @@
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour {
-    public float maxRunSpeed = 2;
-    public float acceleration = 1;
-    public float deceleration = 1;
-    public float rapidDeceleration = 4;
-    public float maxWalkingSpeed = 0.5f;
+    public float maxSpeed = 2;
+    public float maxRunSpeed = 4;
+    public float maxWalkSpeed = 2;
+    public float acceleration = 10;
+    public float deceleration = 10;
+    public float rotationSpeed = 10;
+    public float rapidDeceleration = 15;
     public float thresholdVelocity = 0.5f;
-    public float minThresholdVelocity = 0.01f;
+    public float minMovementVelocity = 0.1f;
 
     public Animator playerAnimator;
 
-    [SerializeField]
-    private float velocityX;
-    [SerializeField]
-    private float velocityZ;
-
-    private int jumpHash;
     private int velocityXHash;
     private int velocityZHash;
 
-    private float runInput;
-    private bool jumpInput;
-    private float xAxisInput;
-    private float zAxisInput;
+    private PlayerInput playerInput;
+    private Vector2 movementInput;
+    private bool isMovementPressed;
+    private bool isJumpPressed;
+    private bool isRunPressed;
+
+    private Rigidbody rb;
 
     private void Start() {
         playerAnimator = GetComponent<Animator>();
-        jumpHash = Animator.StringToHash("Jump");
+        rb = GetComponent<Rigidbody>();
+
         velocityXHash = Animator.StringToHash("Velocity X");
         velocityZHash = Animator.StringToHash("Velocity Z");
+
+        EnablePlayerInput();
+    }
+
+    private void EnablePlayerInput() {
+        playerInput = new PlayerInput();
+
+        playerInput.PlayerController.Movements.performed += ctx => {
+            movementInput = ctx.ReadValue<Vector2>();
+            isMovementPressed = movementInput.x != 0 || movementInput.y != 0;
+        };
+
+        playerInput.PlayerController.Run.performed += ctx => isRunPressed = ctx.ReadValueAsButton();
+
+        playerInput.PlayerController.Jump.performed += ctx => isJumpPressed = ctx.ReadValueAsButton();
+
+        playerInput.PlayerController.Enable();
     }
 
     private void Update() {
-        jumpInput = Input.GetKeyDown(KeyCode.Space);
-        xAxisInput = Input.GetAxis("Horizontal");
-        zAxisInput = Input.GetAxis("Vertical");
+        if (Input.GetKeyDown(KeyCode.F)) { EnablePlayerInput(); }
+        //HandleRotation();
+        HandleJump();
+    }
 
-        velocityX += xAxisInput * acceleration * Time.deltaTime;
-        velocityZ += zAxisInput * acceleration * Time.deltaTime;
+    private void FixedUpdate() {
+        HandleMovement();
+    }
 
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) {
-            runInput = maxRunSpeed;
+    private void HandleJump() {
+        if (isJumpPressed) {
+            playerAnimator.Play("Jump");
+            isJumpPressed = false;
+        }
+    }
+
+    private void HandleMovement() {
+        Vector3 sideDirection = transform.right;
+        Vector3 forwardDirection = transform.forward;
+
+        if (isMovementPressed) {
+            rb.AddForce(movementInput.x * acceleration * sideDirection);
+            rb.AddForce(movementInput.y * acceleration * forwardDirection);
+        }
+
+        if (isRunPressed) {
+            maxSpeed = maxRunSpeed;
         } else {
-            runInput = maxWalkingSpeed;
+            maxSpeed = maxWalkSpeed;
         }
 
         Decelerate();
 
-        playerAnimator.SetFloat(velocityXHash, velocityX);
-        playerAnimator.SetFloat(velocityZHash, velocityZ);
+        float sideVelocity = Vector3.Dot(rb.velocity, sideDirection);
+        float forwardVelocity = Vector3.Dot(rb.velocity, forwardDirection);
 
-        if (jumpInput) {
-            playerAnimator.SetTrigger(jumpHash);
-        }
+        playerAnimator.SetFloat(velocityXHash, sideVelocity);
+        playerAnimator.SetFloat(velocityZHash, forwardVelocity);
+    }
+
+    private void HandleRotation() {
+        if (!isMovementPressed) { return; }
+
+        Vector3 positionToLookAt;
+        positionToLookAt = new Vector3(movementInput.x, 0, movementInput.y);
+
+        Quaternion currentRotation = transform.rotation;
+
+        Quaternion targetRotation = Quaternion.LookRotation(positionToLookAt);
+        transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, rotationSpeed * Time.deltaTime);
+
+        //transform.LookAt(transform.position + positionToLookAt);
     }
 
     private void Decelerate() {
-        if (xAxisInput == 0) {
-            if (Mathf.Abs(velocityX) < minThresholdVelocity) {
-                velocityX = 0;
-            } else if (Mathf.Abs(velocityX) < thresholdVelocity) {
-                velocityX -= velocityX * rapidDeceleration * Time.deltaTime;
+        Vector3 decelarationForce = Vector3.zero;
+        Vector3 sideDirection = transform.right;
+        Vector3 forwardDirection = transform.forward;
+
+        if (!isMovementPressed || movementInput.x == 0) {
+            if (Mathf.Abs(Vector3.Dot(rb.velocity, sideDirection)) < minMovementVelocity) {
+                Vector3 forwardVelocity = Vector3.Dot(rb.velocity, transform.forward) * transform.forward;
+                Vector3 upVelocity = Vector3.Dot(rb.velocity, transform.up) * transform.up;
+
+                rb.velocity = forwardVelocity + upVelocity;
+            } else if (Mathf.Abs(rb.velocity.x) < thresholdVelocity) {
+                decelarationForce += Vector3.Dot(rb.velocity, sideDirection) * rapidDeceleration * sideDirection;
             } else {
-                velocityX -= velocityX * deceleration * Time.deltaTime;
+                decelarationForce += Vector3.Dot(rb.velocity, sideDirection) * deceleration * sideDirection;
             }
         }
-        if (zAxisInput == 0) {
-            if (Mathf.Abs(velocityZ) < minThresholdVelocity) {
-                velocityZ = 0;
-            } else if (Mathf.Abs(velocityZ) < thresholdVelocity) {
-                velocityZ -= velocityZ * rapidDeceleration * Time.deltaTime;
+        if (!isMovementPressed || movementInput.y == 0) {
+            if (Mathf.Abs(Vector3.Dot(rb.velocity, forwardDirection)) < minMovementVelocity) {
+                Vector3 sideVelocity = Vector3.Dot(rb.velocity, transform.right) * transform.right;
+                Vector3 upVelocity = Vector3.Dot(rb.velocity, transform.up) * transform.up;
+
+                rb.velocity = sideVelocity + upVelocity;
+            } else if (Mathf.Abs(rb.velocity.z) < thresholdVelocity) {
+                decelarationForce += Vector3.Dot(rb.velocity, forwardDirection) * rapidDeceleration * forwardDirection;
             } else {
-                velocityZ -= velocityZ * deceleration * Time.deltaTime;
+                decelarationForce += Vector3.Dot(rb.velocity, forwardDirection) * deceleration * forwardDirection;
             }
         }
 
-        if (Mathf.Abs(velocityX) - runInput > thresholdVelocity) {
-            velocityX -= velocityX * deceleration * Time.deltaTime;
-        } else {
-            velocityX = Mathf.Clamp(velocityX, -runInput, runInput);
-        }
+        rb.AddForce(-decelarationForce);
 
-
-        if (Mathf.Abs(velocityZ) - runInput > thresholdVelocity) {
-            velocityZ -= velocityZ * deceleration * Time.deltaTime;
-        } else {
-            velocityZ = Mathf.Clamp(velocityZ, -runInput, runInput);
+        Vector2 movementVelocity = new(rb.velocity.x, rb.velocity.z);
+        if (movementVelocity.magnitude - maxSpeed > thresholdVelocity) {
+            rb.AddForce(rapidDeceleration * -new Vector3(movementVelocity.x, 0, movementVelocity.y));
+        } else if (movementVelocity.magnitude > maxSpeed) {
+            movementVelocity = movementVelocity.normalized * maxSpeed;
+            rb.velocity = new(movementVelocity.x, rb.velocity.y, movementVelocity.y);
         }
     }
 }
