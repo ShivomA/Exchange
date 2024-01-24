@@ -71,6 +71,15 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Aim"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""e6a57184-fd75-4172-a1c6-3d0e0480b856"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -227,6 +236,28 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""action"": ""M2HA4"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""02eef132-a715-4c9b-9e5a-fe939c419208"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Aim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""24fb77d1-1a40-4d3b-a4e2-09c50bb0d8d3"",
+                    ""path"": ""<Gamepad>/leftTrigger"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Aim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -240,6 +271,7 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         m_PlayerController_M1HA1 = m_PlayerController.FindAction("M1HA1", throwIfNotFound: true);
         m_PlayerController_M2HA4 = m_PlayerController.FindAction("M2HA4", throwIfNotFound: true);
         m_PlayerController_Jump = m_PlayerController.FindAction("Jump", throwIfNotFound: true);
+        m_PlayerController_Aim = m_PlayerController.FindAction("Aim", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -306,6 +338,7 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
     private readonly InputAction m_PlayerController_M1HA1;
     private readonly InputAction m_PlayerController_M2HA4;
     private readonly InputAction m_PlayerController_Jump;
+    private readonly InputAction m_PlayerController_Aim;
     public struct PlayerControllerActions
     {
         private @PlayerInput m_Wrapper;
@@ -315,6 +348,7 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         public InputAction @M1HA1 => m_Wrapper.m_PlayerController_M1HA1;
         public InputAction @M2HA4 => m_Wrapper.m_PlayerController_M2HA4;
         public InputAction @Jump => m_Wrapper.m_PlayerController_Jump;
+        public InputAction @Aim => m_Wrapper.m_PlayerController_Aim;
         public InputActionMap Get() { return m_Wrapper.m_PlayerController; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -339,6 +373,9 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
             @Jump.started += instance.OnJump;
             @Jump.performed += instance.OnJump;
             @Jump.canceled += instance.OnJump;
+            @Aim.started += instance.OnAim;
+            @Aim.performed += instance.OnAim;
+            @Aim.canceled += instance.OnAim;
         }
 
         private void UnregisterCallbacks(IPlayerControllerActions instance)
@@ -358,6 +395,9 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
             @Jump.started -= instance.OnJump;
             @Jump.performed -= instance.OnJump;
             @Jump.canceled -= instance.OnJump;
+            @Aim.started -= instance.OnAim;
+            @Aim.performed -= instance.OnAim;
+            @Aim.canceled -= instance.OnAim;
         }
 
         public void RemoveCallbacks(IPlayerControllerActions instance)
@@ -382,5 +422,6 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         void OnM1HA1(InputAction.CallbackContext context);
         void OnM2HA4(InputAction.CallbackContext context);
         void OnJump(InputAction.CallbackContext context);
+        void OnAim(InputAction.CallbackContext context);
     }
 }

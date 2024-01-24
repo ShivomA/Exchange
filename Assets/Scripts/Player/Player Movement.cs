@@ -1,6 +1,9 @@
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour {
+    //[HideInInspector]
+    public bool isCastingSpell;
+
     public float maxSpeed = 2;
     public float maxRunSpeed = 4;
     public float maxWalkSpeed = 2;
@@ -11,6 +14,7 @@ public class PlayerMovement : MonoBehaviour {
     public float thresholdVelocity = 0.5f;
     public float minMovementVelocity = 0.1f;
 
+    public Transform mainCamera;
     public Animator playerAnimator;
 
     private int velocityXHash;
@@ -25,8 +29,12 @@ public class PlayerMovement : MonoBehaviour {
     private Rigidbody rb;
 
     private void Start() {
-        playerAnimator = GetComponent<Animator>();
+        if (mainCamera == null) {
+            mainCamera = Camera.main.transform;
+        }
+
         rb = GetComponent<Rigidbody>();
+        playerAnimator = GetComponent<Animator>();
 
         velocityXHash = Animator.StringToHash("Velocity X");
         velocityZHash = Animator.StringToHash("Velocity Z");
@@ -50,9 +58,10 @@ public class PlayerMovement : MonoBehaviour {
     }
 
     private void Update() {
-        if (Input.GetKeyDown(KeyCode.F)) { EnablePlayerInput(); }
-        //HandleRotation();
+        HandleRotation();
         HandleJump();
+
+        if (Input.GetKeyDown(KeyCode.F)) { EnablePlayerInput(); }
     }
 
     private void FixedUpdate() {
@@ -61,27 +70,35 @@ public class PlayerMovement : MonoBehaviour {
 
     private void HandleJump() {
         if (isJumpPressed) {
-            playerAnimator.Play("Jump");
+            playerAnimator.Play("Fast Jumping");
             isJumpPressed = false;
         }
     }
 
     private void HandleMovement() {
+        if (isCastingSpell) {
+            rb.velocity = new(0, rb.velocity.y, 0);
+        } else {
+            Vector3 cameraSideDirection = new Vector3(mainCamera.right.x, 0, mainCamera.right.z).normalized;
+            Vector3 cameraForwardDirection = new Vector3(mainCamera.forward.x, 0, mainCamera.forward.z).normalized;
+
+
+            if (isMovementPressed) {
+                rb.AddForce(movementInput.x * acceleration * cameraSideDirection);
+                rb.AddForce(movementInput.y * acceleration * cameraForwardDirection);
+            }
+
+            if (isRunPressed) {
+                maxSpeed = maxRunSpeed;
+            } else {
+                maxSpeed = maxWalkSpeed;
+            }
+
+            Decelerate();
+        }
+
         Vector3 sideDirection = transform.right;
         Vector3 forwardDirection = transform.forward;
-
-        if (isMovementPressed) {
-            rb.AddForce(movementInput.x * acceleration * sideDirection);
-            rb.AddForce(movementInput.y * acceleration * forwardDirection);
-        }
-
-        if (isRunPressed) {
-            maxSpeed = maxRunSpeed;
-        } else {
-            maxSpeed = maxWalkSpeed;
-        }
-
-        Decelerate();
 
         float sideVelocity = Vector3.Dot(rb.velocity, sideDirection);
         float forwardVelocity = Vector3.Dot(rb.velocity, forwardDirection);
@@ -93,15 +110,12 @@ public class PlayerMovement : MonoBehaviour {
     private void HandleRotation() {
         if (!isMovementPressed) { return; }
 
-        Vector3 positionToLookAt;
-        positionToLookAt = new Vector3(movementInput.x, 0, movementInput.y);
+        Vector3 cameraForwardDirection = new Vector3(mainCamera.forward.x, 0, mainCamera.forward.z).normalized;
 
         Quaternion currentRotation = transform.rotation;
 
-        Quaternion targetRotation = Quaternion.LookRotation(positionToLookAt);
+        Quaternion targetRotation = Quaternion.LookRotation(cameraForwardDirection);
         transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, rotationSpeed * Time.deltaTime);
-
-        //transform.LookAt(transform.position + positionToLookAt);
     }
 
     private void Decelerate() {

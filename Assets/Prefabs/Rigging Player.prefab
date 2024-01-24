@@ -1129,7 +1129,7 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5
-  m_Height: 1.7181344
+  m_Height: 1.8
   m_Direction: 1
   m_Center: {x: -0, y: 0.8847058, z: -0}
 --- !u!54 &741963045329739324
@@ -1157,7 +1157,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &2247260185571769646
 MonoBehaviour:
@@ -1171,6 +1171,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d53d9e145063b4b08aedbda41db31ecb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isCastingSpell: 0
   maxSpeed: 2
   maxRunSpeed: 4
   maxWalkSpeed: 2
@@ -1180,6 +1181,7 @@ MonoBehaviour:
   rapidDeceleration: 15
   thresholdVelocity: 0.5
   minMovementVelocity: 0.1
+  mainCamera: {fileID: 0}
   playerAnimator: {fileID: 0}
 --- !u!114 &8195515842789584893
 MonoBehaviour:
@@ -1197,6 +1199,7 @@ MonoBehaviour:
   attack1Projectile: {fileID: 8059029017233536754, guid: b96d157ef1bae49bb85fab19aff8bd69, type: 3}
   attack2Projectile: {fileID: 4686882224110404020}
   attack1ProjectileTransform: {fileID: 1152570487320906224}
+  lastAttackAnimation: 
   m1HA1Name: Standing 1H Magic Attack 01
   m2HA4Name: Standing 2H Magic Attack 04
 --- !u!114 &2429945781182309508
